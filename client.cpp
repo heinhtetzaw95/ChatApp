@@ -23,13 +23,14 @@ void *sendtoserver(void* input){
 	struct connection *client = (connection*) input;
 
 //	while (true){
-		cin.getline(client->buffer, 512);
+		if (cin.getline(client->buffer, 512)){
 	//		cout << client->buffer << endl;
 			send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
 			cout << "Send!" << endl;
 					//clear the buffer after sending
 			strcpy(client->buffer, "");
-			
+			}
+//		}
 //			pthread_exit(NULL);
 			return 0;	
 /*		recv(client->theSocket, client->reply, 512, 0);
@@ -136,6 +137,10 @@ int main(int argc, char* argv[]){
 	int thread1, thread2;
 
 	while(theClient.working){
+//		if (cin.getline(theClient.buffer, 512)){
+//			send (theClient.theSocket, theClient.buffer, 512, 0); 
+//			cout << "Send! String: " << theClient.buffer << endl;
+//		}
 //		cin.getline(theClient.buffer, 512);
 		thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
 	
