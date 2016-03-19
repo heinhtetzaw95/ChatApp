@@ -172,6 +172,7 @@ int main(){
 				
 				if (rc[childCount]) cout << "Cannot create thread, " << rc[childCount] << endl;
 				
+				send (child->connection, "\nConnection confirmed by Server!\n", max_size, 0);
 
 				send (child->connection, "You: ", max_size, 0);
 						
