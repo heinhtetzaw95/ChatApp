@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <string>
 #include <iostream>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -21,16 +22,18 @@ struct connection{
 
 void *sendtoserver(void* input){
 	struct connection *client = (connection*) input;
-
+//	bool temp = false;
+//	temp = cin.getline(client->buffer, 512);
 //	while (true){
-		if (cin.getline(client->buffer, 512)){
 	//		cout << client->buffer << endl;
+
+		if (cin.getline(client->buffer, 512)){
 			send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
-			cout << "Send!" << endl;
+			cout << "Send! String: " << client->buffer << endl;
 					//clear the buffer after sending
 			strcpy(client->buffer, "");
-			}
-//		}
+			
+		}
 //			pthread_exit(NULL);
 			return 0;	
 /*		recv(client->theSocket, client->reply, 512, 0);
@@ -91,7 +94,7 @@ int main(int argc, char* argv[]){
 
 //	strcpy(address, argv[1]);
 	strcpy(address, "localhost");							//temporary
-	cout << "Server address: " << address[0] << endl;
+	cout << "Server address: " << address << endl;
 
 //	port = atoi(argv[2]);
 	port = 1500;
@@ -141,9 +144,10 @@ int main(int argc, char* argv[]){
 //			send (theClient.theSocket, theClient.buffer, 512, 0); 
 //			cout << "Send! String: " << theClient.buffer << endl;
 //		}
-//		cin.getline(theClient.buffer, 512);
+//		if (cin.getline(theClient.buffer, 512))
 		thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
-	
+		
+
 	if (recv(theClient.theSocket, theClient.reply, 512, 0)){
 		if (strcmp(theClient.reply, "exit==true") == 0){
 			close(theClient.theSocket);

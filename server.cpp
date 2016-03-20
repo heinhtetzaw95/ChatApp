@@ -19,12 +19,12 @@ struct children{
 
 	int connection;
 	int receive;
-	char buffer[max_size], reply[max_size], name[20];
-	bool active;
+	char buffer[max_size], reply[max_size], name[max_size];
+	bool active, running;
 };
 
 void sendReply(children *child){
-	send (child->connection, "Sample Reply!", sizeof("Sample Reply!"), 0);
+	send (child->connection, "Sample Reply!", max_size, 0);
 }
 
 void *ReadWrite(void* input){
@@ -53,12 +53,13 @@ void *ReadWrite(void* input){
 				}
 	********************************************************************************************************************************/
 	bool loop = true;
-				while (loop){
+	send (child->connection, "You: ", max_size, 0);
+			while (loop){
 					strcpy(child->reply, "Simple Reply!\n\nYou: ");
 					child->receive = recv(child->connection, child->buffer, max_size, 0);
 				//	send (child->connection, child->reply, sizeof(child->reply), 0);
-					
-					cout << "Message: " << child->name << " says - " << child->buffer << endl;
+				//if (child->receive){
+					cout << "<Client> " << child->name << ": " << child->buffer << endl;
 			//		sendReply(child);
 
 					
@@ -69,8 +70,9 @@ void *ReadWrite(void* input){
 		//			return 0;
 					
 					if (strcmp(child->buffer, "--leave") == 0) {
-						loop = false;
+				//		loop = false;
 						cout << "\n" <<child->name << " has left!\n" << endl;
+
 						send (child->connection, "sample 1\n", max_size, 0);
 						send (child->connection, "sample 2\n", max_size, 0);
 						send (child->connection, "sample 3\n", max_size, 0);
@@ -78,12 +80,19 @@ void *ReadWrite(void* input){
 						send (child->connection, "sample 5\n", max_size, 0);
 
 						send (child->connection, "exit==true", max_size, 0);
+						strcpy(child->buffer, "");
+						child->active = false;
+						child->running = false;
+						return 0;
 					}
 
 					else send (child->connection, child->reply, max_size, 0);
+			//	}
 
-				}			
-	pthread_exit(NULL);
+			}			
+			child->running = false;
+//	pthread_exit(NULL);
+			return 0;
 }
 
 int main(){
@@ -133,7 +142,7 @@ int main(){
 	}
 	else cout << "Binding OK!" << endl;
 
-	cout << "Listening at port " << port << " for client(s)...." << endl;
+	cout << "Listening at port " << port << " for first client..." << endl;
 
 	listen (theSocket, 1);
 
@@ -166,16 +175,69 @@ int main(){
 				//close(theSocket);
 			}
 			else {
-				cout << "\n" << child[childCount].name << " Connected!\n" << endl;
 
-				rc[childCount] = pthread_create(&threads[childCount], NULL, &ReadWrite, &child[childCount]);
-				
-				if (rc[childCount]) cout << "Cannot create thread, " << rc[childCount] << endl;
-				
-				send (child->connection, "\nConnection confirmed by Server!\n", max_size, 0);
+				char tempName[512];
+				bool exists = false;
+				int childNum = 0;
 
-				send (child->connection, "You: ", max_size, 0);
+				send (child[childCount].connection, "\nConnection confirmed by Server!\n", max_size, 0);
+
+				send (child[childCount].connection, "Enter your username: ", max_size, 0);
+
+				recv(child[childCount].connection, tempName, max_size, 0);
+
+				cout << "Client entered: " << tempName << endl;
+
+				for (int i=0; i<sizeof(child); i++){
+					if (strcmp(tempName, child[i].name) == 0) {
+						cout << "Username found! ID # " << i << endl;
+						exists = true;
+						childNum = i;
+						break;
+					}
+					else if (i > 9) {
+						cout << "\nUsername is not in Record!" << endl;
+						exists = false;
+						break;
+					}
+				}
+
+				if (exists) {
+					cout << "\nUsername is Valid - ";
+					if (child[childNum].active == true){
+						send (child[childCount].connection, "Error! Username is already logged in!\n", max_size, 0);
+						send (child[childCount].connection, "exit==true", max_size, 0);
+						cout << child[childNum].name << " has been REJECTED!\n" << endl;
 						
+					}
+					else {send (child[childCount].connection, "Username ACCEPTED!\n", max_size, 0);
+						cout << child[childNum].name << " has been ACCEPTED!\n" << endl;
+						child[childNum].active = true;
+
+					}
+					exists = false;
+				}
+
+				else {
+					send (child[childCount].connection, "Error! Username NOT found!\n", max_size, 0);
+					send (child[childCount].connection, "exit==true", max_size, 0);
+					
+				}
+
+				if (child[childNum].running){
+					cout << childNum << " is already running.\n" << endl;
+				}
+				if(child[childNum].active && child[childNum].running == false){
+					cout << "Watch Dog: " << childNum << endl;
+						child[childNum].running = true;
+						rc[childNum] = pthread_create(&threads[childNum], NULL, &ReadWrite, &child[childNum]);
+						
+						if (rc[childNum]) {
+							cout << "Cannot create thread, " << rc[childNum] << endl;
+							child[childNum].active = false;
+							child[childNum].running = false;
+						}
+				}
 				
 //				thread threads[childCount](ReadWrite);
 //				threads[childCount].join();
@@ -204,7 +266,7 @@ int main(){
 
 			//close (child[childCount].connection);
 			childCount++;
-			cout << "Listening at port " << port << " for next client...." << endl;
+			cout << "Listening at port " << port << " for next client..." << endl;
 
 			listen (theSocket, 1);
 		}
