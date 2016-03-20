@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
-//#include <thread>
 
 #define max_size 512
 
@@ -23,73 +22,35 @@ struct children{
 	bool active, running;
 };
 
-void sendReply(children *child){
-	send (child->connection, "Sample Reply!", max_size, 0);
-}
-
 void *ReadWrite(void* input){
 	struct children *child;
 	child = (children*) input;
-//	for (;;){
-		//cout << "Running " << child->name << endl;
-//	}
-	/*****************************************************************************************************************************
-	bool loop = true;
-				while (loop){
-					strcpy(child[childCount].reply, "Simple Reply!\n");
-					child[childCount].receive = recv(child[childCount].connection, child[childCount].buffer, 512, 0);
 
-			//		cout << "Message: " << child[childCount].buffer << endl;
-			//		return 0;
-					
-					if (strcmp(child[childCount].buffer, "leave-chat") == 0) {
-						loop = false;
-			//			cout << "Client left!" << endl;
-
-						send (child[childCount].connection, "exit==true", sizeof("exit==true"), 0);
-					}
-
-					else send (child[childCount].connection, child[childCount].reply, sizeof(child[childCount].reply), 0);
-				}
-	********************************************************************************************************************************/
-	bool loop = true;
 	send (child->connection, "You: ", max_size, 0);
-			while (loop){
-					strcpy(child->reply, "Simple Reply!\n\nYou: ");
-					child->receive = recv(child->connection, child->buffer, max_size, 0);
-				//	send (child->connection, child->reply, sizeof(child->reply), 0);
-				//if (child->receive){
+			while (true){
+
+				strcpy(child->reply, "Simple Reply!\n\nYou: ");
+				child->receive = recv(child->connection, child->buffer, max_size, 0);
+
+			//if (child->receive){
 					cout << "<Client> " << child->name << ": " << child->buffer << endl;
-			//		sendReply(child);
-
-					
-						for (int i=0; i<(rand()%10); i++){
-						send (child->connection, "Push test!\n", max_size, 0);
-						}
-
-		//			return 0;
 					
 					if (strcmp(child->buffer, "--leave") == 0) {
-				//		loop = false;
+
 						cout << "\n" <<child->name << " has left!\n" << endl;
-
-						send (child->connection, "sample 1\n", max_size, 0);
-						send (child->connection, "sample 2\n", max_size, 0);
-						send (child->connection, "sample 3\n", max_size, 0);
-						send (child->connection, "sample 4\n", max_size, 0);
-						send (child->connection, "sample 5\n", max_size, 0);
-
 						send (child->connection, "exit==true", max_size, 0);
 						strcpy(child->buffer, "");
 						child->active = false;
 						child->running = false;
+
 						return 0;
 					}
 
-					else send (child->connection, child->reply, max_size, 0);
+				else send (child->connection, "--recieved--", max_size, 0);
 			//	}
 
 			}			
+
 			child->running = false;
 //	pthread_exit(NULL);
 			return 0;
@@ -116,7 +77,7 @@ int main(){
 
 	if ((theHost = gethostbyname(hostname)) == NULL){
 		cout << " Warning! System hostname is not correctly configured!" << endl;
-//		return -1;
+//		return -1;		//Just warning, don't need to exit the app
 	}
 	else cout << " (or) " << theHost << endl << "Host OK!" << endl;
 
@@ -146,10 +107,8 @@ int main(){
 
 	listen (theSocket, 1);
 
-//	int connection; 
-//	int receive;
-//	char buffer[512], reply[20];
 	children child[10];
+
 	strcpy(child[0].name, "Bob");
 	strcpy(child[1].name, "Sam");
 	strcpy(child[2].name, "Alice");
@@ -171,8 +130,8 @@ int main(){
 
 		child[childCount].connection = accept (theSocket, NULL, NULL);
 			if (child[childCount].connection < 0){
-				return -1;
 				//close(theSocket);
+				return -1;
 			}
 			else {
 
@@ -238,33 +197,7 @@ int main(){
 							child[childNum].running = false;
 						}
 				}
-				
-//				thread threads[childCount](ReadWrite);
-//				threads[childCount].join();
 
-				
-			/*************************************************************************************************************
-				bool loop = true;
-				while (loop){
-					strcpy(child[childCount].reply, "Simple Reply!\n");
-					child[childCount].receive = recv(child[childCount].connection, child[childCount].buffer, 512, 0);
-
-			//		cout << "Message: " << child[childCount].buffer << endl;
-			//		return 0;
-					
-					if (strcmp(child[childCount].buffer, "leave-chat") == 0) {
-						loop = false;
-			//			cout << "Client left!" << endl;
-
-						send (child[childCount].connection, "exit==true", sizeof("exit==true"), 0);
-					}
-
-					else send (child[childCount].connection, child[childCount].reply, sizeof(child[childCount].reply), 0);
-				}
-			***************************************************************************************************************/
-			}
-
-			//close (child[childCount].connection);
 			childCount++;
 			cout << "Listening at port " << port << " for next client..." << endl;
 

@@ -15,17 +15,13 @@ using namespace std;
 struct connection{
 	int theSocket;
 	char reply[512];
-	char  buffer[512];
+	char buffer[512];
 	bool working;
 };
 
 
 void *sendtoserver(void* input){
 	struct connection *client = (connection*) input;
-//	bool temp = false;
-//	temp = cin.getline(client->buffer, 512);
-//	while (true){
-	//		cout << client->buffer << endl;
 
 		if (cin.getline(client->buffer, 512)){
 			send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
@@ -35,48 +31,8 @@ void *sendtoserver(void* input){
 			
 		}
 //			pthread_exit(NULL);
-			return 0;	
-/*		recv(client->theSocket, client->reply, 512, 0);
-
-	
-		if (strcmp(client->reply, "exit==true") == 0){
-			close(client->theSocket);
-			cout << "Connection Terminated!" << endl;
-			client->working = false;
-			
 			return 0;
-		}
-
-		else {
-			cout << client->reply;
-		}*/
-//	}
 }
-
-
-void *recievefromserver(void* input){
-	struct connection *client = (connection*) input;
-//	int count = 0;
-//	while (true){
-//		recv(client->theSocket, client->reply, 512, 0);
-
-		if (strcmp(client->reply, "exit==true") == 0){
-			close(client->theSocket);
-			cout << "Connection Terminated!" << endl;
-			client->working = false;
-			
-			return 0;
-		}
-
-		else cout << client->reply;
-//		cout << count << endl;
-//		count++;
-//		pthread_exit(NULL);
-//		return 0;
-		//cout << client->reply;
-///	}
-}
-
 
 int main(int argc, char* argv[]){
 	struct sockaddr_in socketInfo;
@@ -87,16 +43,17 @@ int main(int argc, char* argv[]){
 	char *serverAddress = &address[0];
 	connection theClient;
 
+			//cout errors when the app is not correctly called
 //	if (argc < 3){
 //		cout << "Syntax Error!\nSyntax: <AppName> <ServerAddress> <PortNumber>" << endl;
 //		return 0;
 //	}
 
-//	strcpy(address, argv[1]);
-	strcpy(address, "localhost");							//temporary
+//	strcpy(address, argv[1]);						//for real one
+	strcpy(address, "localhost");							//temporary starts
 	cout << "Server address: " << address << endl;
 
-//	port = atoi(argv[2]);
+//	port = atoi(argv[2]);							//for real one
 	port = 1500;
 	cout << "Port: " << port << endl;						//temporary ends
 
@@ -140,45 +97,22 @@ int main(int argc, char* argv[]){
 	int thread1, thread2;
 
 	while(theClient.working){
-//		if (cin.getline(theClient.buffer, 512)){
-//			send (theClient.theSocket, theClient.buffer, 512, 0); 
-//			cout << "Send! String: " << theClient.buffer << endl;
-//		}
-//		if (cin.getline(theClient.buffer, 512))
+
 		thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
 		
 
-	if (recv(theClient.theSocket, theClient.reply, 512, 0)){
-		if (strcmp(theClient.reply, "exit==true") == 0){
-			close(theClient.theSocket);
-			cout << "Connection Terminated!" << endl;
-			return 0;
+		if (recv(theClient.theSocket, theClient.reply, 512, 0)){
+			if (strcmp(theClient.reply, "exit==true") == 0){
+				close(theClient.theSocket);
+				cout << "Connection Terminated!" << endl;
+				return 0;
+			}
+
+			else cout << theClient.reply;
 		}
 
-		else cout << theClient.reply;
 	}
-//		thread2 = pthread_create(&recieveThread, NULL, &recievefromserver, &theClient);
-
-//	cout << thread1 << thread2 << endl;
-
-}
 	return 0;
-	/**************************************************************
-	while (true){
-		cin.getline(theClient.buffer, 512);
-		send (theClient.theSocket, theClient.buffer, sizeof(theClient.buffer), 0); 
-		recv(theClient.theSocket, theClient.reply, 512, 0);
-
-	
-		if (strcmp(theClient.reply, "exit==true") == 0){
-			close(theClient.theSocket);
-			cout << "Connection Terminated!" << endl;
-			return 0;
-		}
-
-		else cout << theClient.reply;
-	}
-	****************************************************************/
 	}
 	
 }
