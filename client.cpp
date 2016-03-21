@@ -23,22 +23,20 @@ struct connection{
 void *sendtoserver(void* input){
 	struct connection *client = (connection*) input;
 
-		if (cin.getline(client->buffer, 512)){
-			send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
-			cout << "Send! String: " << client->buffer << endl;
-					//clear the buffer after sending
-			strcpy(client->buffer, "");
+	if (cin.getline(client->buffer, 512)){
+		send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
+		cout << "Send! String: " << client->buffer << endl;
+				//clear the buffer after sending
+		strcpy(client->buffer, "");
 			
-		}
-//			pthread_exit(NULL);
-			return 0;
+	}
+	
 }
 
 int main(int argc, char* argv[]){
 	struct sockaddr_in socketInfo;
 	char address[20];
 	struct hostent *theHost;
-//	int theSocket;
 	int port;
 	char *serverAddress = &address[0];
 	connection theClient;
@@ -50,12 +48,12 @@ int main(int argc, char* argv[]){
 //	}
 
 //	strcpy(address, argv[1]);						//for real one
-	strcpy(address, "localhost");							//temporary starts
+	strcpy(address, "localhost");					//for testing
 	cout << "Server address: " << address << endl;
 
 //	port = atoi(argv[2]);							//for real one
-	port = 1500;
-	cout << "Port: " << port << endl;						//temporary ends
+	port = 1500;									//for testing
+	cout << "Port: " << port << endl;
 
 	bzero (&socketInfo, sizeof(sockaddr_in));
 
@@ -87,32 +85,31 @@ int main(int argc, char* argv[]){
 		close (theClient.theSocket);
 		return -1;
 	}
+
 	else {
 		cout << "Connection established!" << endl;
 		theClient.working = true;
 	
-	
+		pthread_t sendThread, recieveThread;
+		int thread1, thread2;
 
-	pthread_t sendThread, recieveThread;
-	int thread1, thread2;
+		while(theClient.working){
+			
+			thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
 
-	while(theClient.working){
+			if (recv(theClient.theSocket, theClient.reply, 512, 0)){
+				if (strcmp(theClient.reply, "exit==true") == 0){
+					close(theClient.theSocket);
+					cout << "Connection Terminated!" << endl;
+					theClient.working = false;
+					return 0;
+				}
 
-		thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
-		
-
-		if (recv(theClient.theSocket, theClient.reply, 512, 0)){
-			if (strcmp(theClient.reply, "exit==true") == 0){
-				close(theClient.theSocket);
-				cout << "Connection Terminated!" << endl;
-				return 0;
+				else cout << theClient.reply;
 			}
-
-			else cout << theClient.reply;
 		}
+	}
 
-	}
 	return 0;
-	}
-	
+
 }
