@@ -22,21 +22,18 @@ struct children{
 	bool active, running;
 	int partnerNum;
 };
-
+		
+		//
 void *ReadWrite(void* input){
 	struct children *child;
 	child = (children*) input;
 
 	cout << "Reach 1" << endl;
 
-
-
 	send (child->connection, "You: ", max_size, 0);
 			while (true){
 
 				cout << "Reach 2" << endl;
-
-				//goto enterAgain;
 
 				recv(child->connection, child->buffer, max_size, 0);
 
@@ -48,10 +45,6 @@ void *ReadWrite(void* input){
 
 					cout << "<Client> " << child->name << ": " << child->buffer << endl;
 
-					for (int i=0; i<10; i++){
-						send (child->connection, child->buffer, max_size, 0);
-					}
-					
 					if (strcmp(child->buffer, "--leave") == 0) {
 
 						cout << "\n" <<child->name << " has left!\n" << endl;
@@ -63,9 +56,18 @@ void *ReadWrite(void* input){
 						return 0;
 					}
 
+					if (strcmp(child->buffer, "--leave") != 0){
+						strcpy(child->message, child->buffer);
+					}
+
 					else {
 						send (child->connection, "--recieved--", max_size, 0);
 						send (child->connection, "\nYou: ", max_size, 0);
+					}
+
+					if (sizeof(child->message) > 0){
+						send (child->connection, child->message, max_size, 0);
+						strcpy(child->message, "");
 					}
 
 				}
@@ -123,6 +125,7 @@ int main(){
 		cerr << "Binding Error!" << endl << endl;
 		return -1;
 	}
+
 	else cout << "Binding OK!" << endl;
 
 	cout << "Listening at port " << port << " for first client..." << endl;
@@ -142,6 +145,11 @@ int main(){
 	strcpy(child[8].name, "Wyane");
 	strcpy(child[9].name, "Chris");
 
+	for (int i = 0; i<10; i++){
+		child[i].active = false;
+		child[i].running = false;
+	}
+
 	int childCount = 0;
 
 	pthread_t threads[10];
@@ -155,13 +163,15 @@ int main(){
 				//close(theSocket);
 				return -1;
 			}
+
 			else {
+				cout << "\nNotice: A client joined" << endl << endl;
 
 				char tempName[512], partner[512];
 				bool exists = false;
 				int childNum = 0;
 
-				send (child[childCount].connection, "\nConnection confirmed by Server!\n", max_size, 0);
+				send (child[childCount].connection, "\nConnection confirmed by Server!\n\n", max_size, 0);
 
 				askAgain: while(exists == false){
 
@@ -184,9 +194,9 @@ int main(){
 							exists = false;
 
 							send (child[childNum].connection, "Error! Username NOT found!\n", max_size, 0);
-							send (child[childNum].connection, "exit==true", max_size, 0);
+			//				send (child[childNum].connection, "exit==true", max_size, 0);
 
-						//	goto askAgain;
+							goto askAgain;
 						}
 					}
 				}
@@ -204,7 +214,29 @@ int main(){
 						cout << child[childNum].name << " has been ACCEPTED!\n" << endl;
 						child[childNum].active = true;
 
-		/*				bool partnerExists = false;
+						int online = 0;
+						for (int j=0; j<=10; j++){
+
+							if (child[j].running == true){
+								send (child[childNum].connection, "  ", max_size, 0);
+								send (child[childNum].connection, child[j].name, max_size, 0);
+								online++;
+							}
+
+						}
+							if (online == 1){
+								send (child[childNum].connection, " is online now.\n", max_size, 0);
+							}
+							else if (online > 1){
+								send (child[childNum].connection, " are online now.\n", max_size, 0);
+							}
+
+							else {
+								send (child[childNum].connection, "You are only one online right now.\n", max_size, 0);
+								goto passPartnerCheck;
+							}
+
+						bool partnerExists = false;
 						bool gotPartner = false;
 						char tryAgain[512];
 
@@ -216,24 +248,32 @@ int main(){
 							for (int i=0; i<sizeof(child) && gotPartner == false; i++){
 								if (strcmp(partner, child[i].name) == 0) {
 									cout << "Partner found! ID # " << i << endl;
-									child[childNum].partnerNum = i;
 
-									send (child[childNum].connection, "Partner found ", max_size, 0);
+									send (child[childNum].connection, "\nPartner found ", max_size, 0);
 
-									if (child[child[childNum].partnerNum].running) {
+									if (child[child[childNum].partnerNum].running == true) {
 										send (child[childNum].connection, "and is active.\n", max_size, 0);
 										gotPartner = true;
-										goto startTalk;
+										child[childNum].partnerNum = i;
+										goto passPartnerCheck;
 									}
 
 									else
-										send (child[childNum].connection, "but not active. Try another one? (Y/N): ", max_size, 0);
+										send (child[childNum].connection, "but not active.\nTry another one? (Y/N): ", max_size, 0);
 										recv(child[childNum].connection, tryAgain, max_size, 0);
 
 										if (strcmp(tryAgain, "Y") == 0 || strcmp(tryAgain, "y") == 0){
 											goto enterAgain;
 										}
-										else {
+
+				//						else if (strcmp(tryAgain, "First one") == 0 || strcmp(tryAgain, "Server") == 0){
+				//							goto createThread;
+				//						}
+
+										else if (strcmp(tryAgain, "N") == 0 || strcmp(tryAgain, "n") == 0){
+											child[childNum].active = false;
+											child[childNum].running = false;
+											send (child[childNum].connection, "\nBye\n", max_size, 0);
 											send (child[childNum].connection, "exit==true", max_size, 0);
 											goto nextClient;
 										}
@@ -244,13 +284,16 @@ int main(){
 								else if (i > 9) {
 									cout << "\nPartner NOT found!" << endl;
 
-									send (child[childNum].connection, "Error! Partner NOT found! Try again? (Y/N): ", max_size, 0);
+									send (child[childNum].connection, "\nError! Partner NOT found!\nTry again? (Y/N): ", max_size, 0);
 									recv(child[childNum].connection, tryAgain, max_size, 0);
 
 										if (strcmp(tryAgain, "Y") == 0 || strcmp(tryAgain, "y") == 0){
 											goto enterAgain;
 										}
 										else if (strcmp(tryAgain, "N") == 0 || strcmp(tryAgain, "n") == 0){
+											child[childNum].active = false;
+											child[childNum].running = false;
+											send (child[childNum].connection, "\nBye\n", max_size, 0);
 											send (child[childNum].connection, "exit==true", max_size, 0);
 											goto nextClient;
 										}
@@ -258,17 +301,19 @@ int main(){
 									break;
 								}
 							}
-						}*/
+						}
 					}
 
 					exists = false;
 				}
 
-				if (child[childNum].running){
+				passPartnerCheck:
+				
+				if (child[childNum].running == true){
 					cout << childNum << " is already running.\n" << endl;
 				}
 
-				else if(child[childNum].active){
+				else if(child[childNum].active == true){
 					cout << "Watch Dog: " << childNum << endl;
 					
 					child[childNum].running = true;
@@ -282,11 +327,15 @@ int main(){
 						child[childNum].running = false;
 					}
 				}
+			
+			
+
+			nextClient:
 
 			childCount++;
-			cout << "Listening at port " << port << " for next client..." << endl;
+			cout << "\nListening at port " << port << " for next client..." << endl;
 
-			nextClient: listen (theSocket, 1);
+			listen (theSocket, 1);
 		}
 	
 	}

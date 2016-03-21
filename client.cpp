@@ -19,11 +19,12 @@ struct connection{
 	bool working;
 };
 
-
+	//make a thread function that will just send the user input to server
 void *sendtoserver(void* input){
 	struct connection *client = (connection*) input;
 
-	if (cin.getline(client->buffer, 512)){
+	if (cin.getline(client->buffer, 512)){				//***this line is making problems on some computers***
+
 		send (client->theSocket, client->buffer, sizeof(client->buffer), 0); 
 		cout << "Send! String: " << client->buffer << endl;
 				//clear the buffer after sending
@@ -42,17 +43,17 @@ int main(int argc, char* argv[]){
 	connection theClient;
 
 			//cout errors when the app is not correctly called
-//	if (argc < 3){
-//		cout << "Syntax Error!\nSyntax: <AppName> <ServerAddress> <PortNumber>" << endl;
-//		return 0;
-//	}
+	if (argc < 3){
+		cout << "Syntax Error!\nSyntax: <AppName> <ServerAddress> <PortNumber>" << endl;
+		return 0;
+	}
 
-//	strcpy(address, argv[1]);						//for real one
-	strcpy(address, "localhost");					//for testing
+	strcpy(address, argv[1]);							//for real one
+//	strcpy(address, "localhost");						//for testing
 	cout << "Server address: " << address << endl;
 
-//	port = atoi(argv[2]);							//for real one
-	port = 1500;									//for testing
+	port = atoi(argv[2]);								//for real one
+//	port = 1500;										//for testing
 	cout << "Port: " << port << endl;
 
 	bzero (&socketInfo, sizeof(sockaddr_in));
@@ -80,12 +81,13 @@ int main(int argc, char* argv[]){
 	socketInfo.sin_family = AF_INET;
 	socketInfo.sin_port = htons((ushort)port);
 
+		//drop connection and throw error if cannot connect to the server
 	if(connect(theClient.theSocket, (struct sockaddr *) &socketInfo, sizeof (sockaddr_in))<0){
 		perror ("Connection error");
 		close (theClient.theSocket);
 		return -1;
 	}
-
+		//work 
 	else {
 		cout << "Connection established!" << endl;
 		theClient.working = true;
@@ -98,6 +100,8 @@ int main(int argc, char* argv[]){
 			thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
 
 			if (recv(theClient.theSocket, theClient.reply, 512, 0)){
+
+					//make the trigger that the server can terminate *this* client
 				if (strcmp(theClient.reply, "exit==true") == 0){
 					close(theClient.theSocket);
 					cout << "Connection Terminated!" << endl;
