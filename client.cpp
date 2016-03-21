@@ -92,12 +92,11 @@ int main(int argc, char* argv[]){
 		cout << "Connection established!" << endl;
 		theClient.working = true;
 	
-		pthread_t sendThread, recieveThread;
-		int thread1, thread2;
+		pthread_t sendThread;
 
 		while(theClient.working){
 			
-			thread1 = pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
+			pthread_create(&sendThread, NULL, &sendtoserver, &theClient);
 
 			if (recv(theClient.theSocket, theClient.reply, 512, 0)){
 

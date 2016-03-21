@@ -23,28 +23,21 @@ struct children{
 	int partnerNum;
 };
 		
-		//
+		//make the thread that will recieve the client input and sends back AKT
 void *ReadWrite(void* input){
 	struct children *child;
 	child = (children*) input;
 
-	cout << "Reach 1" << endl;
-
 	send (child->connection, "You: ", max_size, 0);
 			while (true){
 
-				cout << "Reach 2" << endl;
-
 				recv(child->connection, child->buffer, max_size, 0);
-
-				strcpy(child->reply, "Simple Reply!\n\nYou: ");
 
 				if (true){
 
-					cout << "Reach 3" << endl;
+					cout << "<Client> " << child->name << ": " << child->buffer << endl;	
 
-					cout << "<Client> " << child->name << ": " << child->buffer << endl;
-
+						//check if the client wants to leave
 					if (strcmp(child->buffer, "--leave") == 0) {
 
 						cout << "\n" <<child->name << " has left!\n" << endl;
@@ -56,27 +49,28 @@ void *ReadWrite(void* input){
 						return 0;
 					}
 
-					if (strcmp(child->buffer, "--leave") != 0){
-						strcpy(child->message, child->buffer);
-					}
-
+						//send AKT and next line request
 					else {
 						send (child->connection, "--recieved--", max_size, 0);
 						send (child->connection, "\nYou: ", max_size, 0);
+					}
+							//send the incoming message from another client **not working**
+
+				/*	if (strcmp(child->buffer, "--leave") != 0){
+						strcpy(child->message, child->buffer);
 					}
 
 					if (sizeof(child->message) > 0){
 						send (child->connection, child->message, max_size, 0);
 						strcpy(child->message, "");
-					}
+					}*/
 
 				}
 
 			}			
 
 			child->running = false;
-//	pthread_exit(NULL);
-			return 0;
+			pthread_exit(NULL);
 }
 
 
@@ -88,10 +82,10 @@ int main(){
 	
 	bzero (&theSocket, sizeof (sockaddr_in));
 
-//	cout << "Port: ";
-//	cin >> port;
+	cout << "Port: ";
+	cin >> port;
 
-	port = 1500;
+//	port = 1500;			//for temporaty
 
 	
 
@@ -99,6 +93,7 @@ int main(){
 	gethostname(hostname, 256);
 	cout << hostname;
 
+		//check the host address
 	if ((theHost = gethostbyname(hostname)) == NULL){
 		cout << " Warning! System hostname is not correctly configured!" << endl;
 //		return -1;		//Just warning, don't need to exit the app
@@ -108,6 +103,7 @@ int main(){
 		//create socket
 	theSocket = socket (AF_INET, SOCK_STREAM, 0);
 	
+		//check socket if it's ok
 	if (theSocket < 0){
 		close (theSocket);
 		return -1;
@@ -125,15 +121,16 @@ int main(){
 		cerr << "Binding Error!" << endl << endl;
 		return -1;
 	}
-
 	else cout << "Binding OK!" << endl;
 
 	cout << "Listening at port " << port << " for first client..." << endl;
 
+		//wait for first 
 	listen (theSocket, 1);
 
 	children child[10];
 
+		//register the usernames -- **this server only have these client usernames**
 	strcpy(child[0].name, "Bob");
 	strcpy(child[1].name, "Sam");
 	strcpy(child[2].name, "Alice");
@@ -171,6 +168,7 @@ int main(){
 				bool exists = false;
 				int childNum = 0;
 
+						//confirm connection
 				send (child[childCount].connection, "\nConnection confirmed by Server!\n\n", max_size, 0);
 
 				askAgain: while(exists == false){
@@ -181,6 +179,7 @@ int main(){
 
 					cout << "Client entered: " << tempName << endl;
 
+							//check the username that client typed in
 					for (int i=0; i<sizeof(child); i++){
 						if (strcmp(tempName, child[i].name) == 0) {
 							cout << "Username found! ID # " << i << endl;
@@ -194,67 +193,83 @@ int main(){
 							exists = false;
 
 							send (child[childNum].connection, "Error! Username NOT found!\n", max_size, 0);
-			//				send (child[childNum].connection, "exit==true", max_size, 0);
 
+								//if there is not such username, ask again
 							goto askAgain;
 						}
 					}
 				}
 
+						//valid username -> check if it's a dublicate user trying to login
 				if (exists) {
 					cout << "\nUsername is Valid - ";
+
+								//reject if duplicated
 					if (child[childNum].active == true){
 						send (child[childNum].connection, "Error! Username is already logged in!\n", max_size, 0);
 						send (child[childNum].connection, "exit==true", max_size, 0);
 						cout << child[childNum].name << " has been REJECTED!\n" << endl;
 						
 					}
+								//accept if it's not duplicate
 					else {
 						send (child[childNum].connection, "Username ACCEPTED!\n", max_size, 0);
 						cout << child[childNum].name << " has been ACCEPTED!\n" << endl;
 						child[childNum].active = true;
 
+
+								//check who is currently online
 						int online = 0;
 						for (int j=0; j<=10; j++){
 
 							if (child[j].running == true){
-								send (child[childNum].connection, "  ", max_size, 0);
+								send (child[childNum].connection, " - ", max_size, 0);
 								send (child[childNum].connection, child[j].name, max_size, 0);
 								online++;
 							}
 
 						}
-							if (online == 1){
-								send (child[childNum].connection, " is online now.\n", max_size, 0);
-							}
-							else if (online > 1){
-								send (child[childNum].connection, " are online now.\n", max_size, 0);
-							}
 
-							else {
-								send (child[childNum].connection, "You are only one online right now.\n", max_size, 0);
-								goto passPartnerCheck;
-							}
+								//one person online
+						if (online == 1){
+							send (child[childNum].connection, " is online now.\n", max_size, 0);
+						}
+								//two or more people online
+						else if (online > 1){
+							send (child[childNum].connection, " are online now.\n", max_size, 0);
+						}
+								//nobody else is online
+						else {
+							send (child[childNum].connection, "You are only one online right now.\n", max_size, 0);
+							goto passPartnerCheck;
+						}
+
+							//ask for partner name and check partner's name
 
 						bool partnerExists = false;
 						bool gotPartner = false;
 						char tryAgain[512];
 
 						enterAgain: while (partnerExists == false){
+
+									//ask for partner's name to connect to
 					
 							send (child[childNum].connection, "Connect to: ", max_size, 0);
 							recv(child[childNum].connection, partner, max_size, 0);
 
 							for (int i=0; i<sizeof(child) && gotPartner == false; i++){
+
+										//check partner
 								if (strcmp(partner, child[i].name) == 0) {
 									cout << "Partner found! ID # " << i << endl;
 
+									child[childNum].partnerNum = i;
 									send (child[childNum].connection, "\nPartner found ", max_size, 0);
 
+											//check partner active or not
 									if (child[child[childNum].partnerNum].running == true) {
 										send (child[childNum].connection, "and is active.\n", max_size, 0);
 										gotPartner = true;
-										child[childNum].partnerNum = i;
 										goto passPartnerCheck;
 									}
 
@@ -265,10 +280,6 @@ int main(){
 										if (strcmp(tryAgain, "Y") == 0 || strcmp(tryAgain, "y") == 0){
 											goto enterAgain;
 										}
-
-				//						else if (strcmp(tryAgain, "First one") == 0 || strcmp(tryAgain, "Server") == 0){
-				//							goto createThread;
-				//						}
 
 										else if (strcmp(tryAgain, "N") == 0 || strcmp(tryAgain, "n") == 0){
 											child[childNum].active = false;
@@ -281,6 +292,7 @@ int main(){
 									break;
 								}
 
+										//if partner cannot be found in the list, ask again
 								else if (i > 9) {
 									cout << "\nPartner NOT found!" << endl;
 
@@ -307,6 +319,7 @@ int main(){
 					exists = false;
 				}
 
+					//after checking everything, make a thread
 				passPartnerCheck:
 				
 				if (child[childNum].running == true){
@@ -317,10 +330,13 @@ int main(){
 					cout << "Watch Dog: " << childNum << endl;
 					
 					child[childNum].running = true;
+
+							//making a thread
 					rc[childNum] = pthread_create(&threads[childNum], NULL, &ReadWrite, &child[childNum]);
 
 			//		if (child[childNum].running == false ) pthread_cancel(threads[childNum]);
-					
+							
+							//creating thread fails
 					if (rc[childNum]) {
 						cout << "Cannot create thread, " << rc[childNum] << endl;
 						child[childNum].active = false;
@@ -329,7 +345,7 @@ int main(){
 				}
 			
 			
-
+				//wait for next client to connect the server
 			nextClient:
 
 			childCount++;
